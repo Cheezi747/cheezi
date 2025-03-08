@@ -9,10 +9,18 @@
     <link rel="manifest" href="favicon/site.webmanifest">
     <title>Cheezi.se</title>
     <style>
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+
         .grid-container {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
             width: 100%;
+            min-height: 100vh;
+            gap: 0;
         }
 
         .grid-item {
@@ -20,6 +28,7 @@
             height: 40px;
             background-repeat: no-repeat;
             background-size: cover;
+            background-position: center;
         }
     </style>
 </head>
@@ -30,48 +39,81 @@
     <script>
         // List of images
         var images = [
-            'cheezi-3d-print.png', 'cheezi-autumn.png', 'cheezi-christmas.png', 'cheezi-cold.png',
+
+            'cheezi_valentine.png', 'cheezi-3d-print.png', 'cheezi-autumn.png', 'cheezi-christmas.png', 'cheezi-cold.png',
             'cheezi-decibel.png', 'cheezi-defqon.png', 'cheezi-ecl.png',
             'Cheezi-football.png', 'cheezi-gang.png', 'cheezi-git.png',
             'cheezi-hammer.png', 'cheezi-headphones.png', 'cheezi-italy.png',
             'cheezi-mastermind.png', 'cheezi-new-year.png', 'cheezi-prpsct.png', 'cheezi-spoon.png',
             'cheezi-supercharged.png', 'Cheezi-vacation.png', 'cheezi-work.png',
-            'cheezi.png'
+            'cheezi.png', 'cheezi-charger.png', 'cheezi-melting.png'
         ];
 
+        // Add debounce function
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        // Preload all images
+        const imageCache = new Map();
+        images.forEach(imageName => {
+            const img = new Image();
+            img.src = `images/${imageName}`;
+            imageCache.set(imageName, img);
+        });
+
+        let isLoading = false;
+
         function addItems(count) {
+            if (isLoading) return;
+            isLoading = true;
+
+            const fragment = document.createDocumentFragment();
             const container = document.querySelector('.grid-container');
-            for (let i = 0; i < count; i++) {
-                const item = document.createElement('div');
-                item.className = 'grid-item';
-                const randomImage = images[Math.floor(Math.random() * images.length)];
-                item.style.backgroundImage = 'url("images/' + randomImage + '")';
-                container.appendChild(item);
-            }
+
+            requestAnimationFrame(() => {
+                for (let i = 0; i < count; i++) {
+                    const item = document.createElement('div');
+                    item.className = 'grid-item';
+                    const randomImage = images[Math.floor(Math.random() * images.length)];
+                    item.style.backgroundImage = `url("images/${randomImage}")`;
+                    fragment.appendChild(item);
+                }
+
+                container.appendChild(fragment);
+                isLoading = false;
+            });
         }
 
         function checkScroll() {
-            const container = document.querySelector('.grid-container');
-            if ((window.innerHeight + window.scrollY) >= document.documentElement.scrollHeight - 100) {
-                // Add more items when user is near bottom
-                addItems(Math.floor(window.innerWidth / 40) * 2);
+            const buffer = window.innerHeight * 2; // Increased buffer for smoother experience
+            if ((window.innerHeight + window.scrollY) >= document.documentElement.scrollHeight - buffer) {
+                requestAnimationFrame(() => {
+                    addItems(Math.floor(window.innerWidth / 40) * 12);
+                });
             }
         }
 
         function initializeGrid() {
             const container = document.querySelector('.grid-container');
             container.innerHTML = '';
-            // Initial items based on viewport
-            addItems(Math.floor(window.innerWidth / 40) * 10);
+            // Initial items based on viewport size
+            const rowsNeeded = Math.ceil(window.innerHeight / 40) + 5;
+            const itemsPerRow = Math.floor(window.innerWidth / 40);
+            addItems(rowsNeeded * itemsPerRow);
         }
-
-        // Update the CSS for the grid container
-        document.querySelector('.grid-container').style.height = 'auto';
-        document.querySelector('.grid-container').style.overflow = 'visible';
 
         window.onload = initializeGrid;
         window.onresize = initializeGrid;
-        window.addEventListener('scroll', checkScroll);
+        window.addEventListener('scroll', checkScroll, { passive: true });
     </script>
 </body>
 
